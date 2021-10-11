@@ -142,17 +142,17 @@ void Initialize() {
 	//-------------------------------------------------------------
 	// Register expected id/data type combination for incoming msgs
 	// Expecting bool to turn LED on or off
-	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_LED_BLUE_PIN, typeBool);
-	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_LED_RED_PIN, typeBool);
+	BinaryMsgProcessor::RegisterInMsgId(IN_MSG_ID_LED_BLUE_PIN, typeBool);
+	BinaryMsgProcessor::RegisterInMsgId(IN_MSG_ID_LED_RED_PIN, typeBool);
 
 	// Expecting Uint 8 msg with values 0-255 for PWM on digital pin
-	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_PMW_PIN_X, typeUInt8);
-	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_PMW_PIN_Y, typeUInt8);
+	BinaryMsgProcessor::RegisterInMsgId(IN_MSG_ID_PMW_PIN_X, typeUInt8);
+	BinaryMsgProcessor::RegisterInMsgId(IN_MSG_ID_PMW_PIN_Y, typeUInt8);
 
 	// Will be raised from parsed incoming message if msg value is of certain type
 	// Register all you require for your program
-	BinaryMsgProcessor::RegisterFuncBool(&CallbackBoolValue);
-	BinaryMsgProcessor::RegisterFuncUInt8(&CallbackUint8Value);
+	BinaryMsgProcessor::RegisterInMsgHandler_Bool(&InMsgHandler_Bool);
+	BinaryMsgProcessor::RegisterInMsgHandler_UInt8(&InMsgHandler_Uint8);
 #ifdef BINARY_MSG_DEBUG
 	BinaryMsgProcessor::RegisterErrCallback(&ErrCallback);
 #endif // BINARY_MSG_DEBUG
@@ -338,6 +338,42 @@ void SendTemperature(int sensorValue) {
 
 #ifndef SECTION_CALLBACKS
 
+void InMsgHandler_Bool(uint8_t id, bool value) {
+	//Serial.print("bool-id:"); Serial.print(id); Serial.print(" Val:"); Serial.println(value);
+	switch (id) {
+	case IN_MSG_ID_LED_RED_PIN:
+		digitalWrite(LED_RED_PIN, value ? HIGH : LOW);
+		break;
+	case IN_MSG_ID_LED_BLUE_PIN:
+		digitalWrite(LED_BLUE_PIN, value ? HIGH : LOW);
+		break;
+	default:
+		// TODO - error msg if desired
+		break;
+	}
+}
+
+
+void InMsgHandler_Uint8(uint8_t id, uint8_t value) {
+	//Serial.print("U8-id:"); Serial.print(id); Serial.print(" Val:"); Serial.println(value);
+	//Analog writes to PWM pin from 0 - 255 (8 bits), reads from 0 - 1023 (10 bits)
+	switch (id) {
+	case IN_MSG_ID_PMW_PIN_X:
+		// Write to pin
+		analogWrite(PMW_PIN_X, value);
+		// For demo, bounce back the new value
+		SendUint8Msg(IN_MSG_ID_PMW_PIN_X, value);
+		break;
+	case IN_MSG_ID_PMW_PIN_Y:
+		analogWrite(PMW_PIN_Y, value);
+		break;
+	default:
+		// TODO - error msg if desired
+		break;
+	}
+}
+
+
 #ifdef BINARY_MSG_DEBUG
 void ErrCallback(ErrMsg* errMsg) {
 	PrintErr(errMsg);
@@ -424,43 +460,5 @@ void PrintErr(ErrMsg* msg) {
 	}
 }
 #endif
-
-
-void CallbackBoolValue(uint8_t id, bool value) {
-	//Serial.print("bool-id:"); Serial.print(id); Serial.print(" Val:"); Serial.println(value);
-	switch (id) {
-	case IN_MSG_ID_LED_RED_PIN:
-		digitalWrite(LED_RED_PIN, value ? HIGH : LOW);
-		break;
-	case IN_MSG_ID_LED_BLUE_PIN:
-		digitalWrite(LED_BLUE_PIN, value ? HIGH : LOW);
-		break;
-	default:
-		// TODO - error msg if desired
-		break;
-	}
-}
-
-
-void CallbackUint8Value(uint8_t id, uint8_t value) {
-	// Debug only 
-	//Serial.print("U8-id:"); Serial.print(id); Serial.print(" Val:"); Serial.println(value);
-	// Analog writes from 0 - 255 (8 bits), so we use UInt8
-	// Reads from 0 - 1023 (10 bits)
-	switch (id) {
-	case IN_MSG_ID_PMW_PIN_X:
-		// Write to pin
-		analogWrite(PMW_PIN_X, value);
-		// For demo, bounce back the new value
-		SendUint8Msg(IN_MSG_ID_PMW_PIN_X, value);
-		break;
-	case IN_MSG_ID_PMW_PIN_Y:
-		analogWrite(PMW_PIN_Y, value);
-		break;
-	default:
-		// TODO - error msg if desired
-		break;
-	}
-}
 
 #endif // !SECTION_CALLBACKS
