@@ -1,0 +1,6 @@
+<VisualMicro>
+  <Program Name="BinaryMsgDemoArduinoUno" Ext=".ino" Location="D:\Dev\OngoingArduinoDev\BinaryMsgDemoArduinoUno">
+    <Debug />
+    <Compile ConfigurationAdditionalPreProcessor="" />
+  </Program>
+</VisualMicro>
