@@ -3,10 +3,10 @@
  Created:	10/11/2021 10:09:24 AM
  Author:	Michael
 */
-//#define DEBUG
-#ifdef DEBUG
-//#define BINARY_MSG_DEBUG
-#endif // DEBUG
+
+
+// Add the define in the project DEFINE property field to enable in ino and lib
+//#BINARY_MSG_DEBUG
 
 #include <BinaryMsgProcessor.h>
 #include "TempProcessing.h"
@@ -95,10 +95,10 @@ uint8_t currentRemaining = 0;
 #ifndef SECTION_ARDUINO_FUNCTIONS
 
 void setup() {
-#ifdef DEBUG
+#ifdef BINARY_MSG_DEBUG
 	Serial.begin(115200);
 	while (!Serial) {}
-#endif // DEBUG
+#endif // BINARY_MSG_DEBUG
 
 	btSerial.begin(BAUDRATE); // 
 
@@ -107,9 +107,9 @@ void setup() {
 	while (!btSerial) {}
 #endif // __AVR__
 
-//#ifdef DEBUG
+#ifdef BINARY_MSG_DEBUG
 	Serial.println("BT Binary...");
-//#endif // DEBUG
+#endif // BINARY_MSG_DEBUG
 
 	Initialize();
 }
@@ -153,9 +153,9 @@ void Initialize() {
 	// Register all you require for your program
 	BinaryMsgProcessor::RegisterFuncBool(&CallbackBoolValue);
 	BinaryMsgProcessor::RegisterFuncUInt8(&CallbackUint8Value);
-#ifdef DEBUG
+#ifdef BINARY_MSG_DEBUG
 	BinaryMsgProcessor::RegisterErrCallback(&ErrCallback);
-#endif // DEBUG
+#endif // BINARY_MSG_DEBUG
 }
 
 
@@ -214,7 +214,7 @@ void GetNewMsg(int available) {
 			}
 		}
 		else {
-#ifdef DEBUG
+#ifdef BINARY_MSG_DEBUG
 			Serial.print("GetNewMsgERR- currentPos:"); Serial.println(currentPos);
 			Serial.print("---:");
 			Serial.print(buff[0]); Serial.print(",");
@@ -225,7 +225,7 @@ void GetNewMsg(int available) {
 			Serial.print(buff[5]); Serial.print(",");
 			Serial.print(buff[6]); Serial.print(",");
 			Serial.println(buff[8]);
-#endif // DEBUG
+#endif // BINARY_MSG_DEBUG
 			PurgeBuffAndBT();
 		}
 	}
@@ -338,7 +338,7 @@ void SendTemperature(int sensorValue) {
 
 #ifndef SECTION_CALLBACKS
 
-#ifdef DEBUG
+#ifdef BINARY_MSG_DEBUG
 void ErrCallback(ErrMsg* errMsg) {
 	PrintErr(errMsg);
 	if (errMsg->Error != err_NoErr) {
