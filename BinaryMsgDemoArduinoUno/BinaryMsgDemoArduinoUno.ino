@@ -10,14 +10,42 @@
 
 #include <BinaryMsgProcessor.h>
 #include "TempProcessing.h"
-#include <SoftwareSerial.h>
-#include <BinaryMsgMessages.h>
-
 
 #ifndef SECTION_DEFINES
 
+#ifdef __AVR__
+	// UNO and others use the software serial.
+	#include <SoftwareSerial.h>
 
+	// Must set the Bluetooth baud via an AT command AT+UART=115200,1,0
+	// otherwise it is not fast enough. SoftwareSerial does corrupts 
+	// data at that speed but I can recover. Better to route Bluetooth 
+	// to use a hardware serial port but this does for demo
+	#define BAUDRATE 115200
 
+	// The jumpers on Bluetooth board are set to 4TX and 5RX. 
+	// They are reversed on serial since RX from BT gets TX to serial
+	SoftwareSerial _btSerial(5, 4); //RX,TX
+#define btSerial _btSerial 
+#else 
+	// For non AVR like DUE defaulting to hardware serial port 3
+	// Matches configuration
+	//http://arduino-er.blogspot.com/2015/07/connect-arduino-due-with-hc-06.html
+	//
+	//Arduino Due + HC - 06 (Bluetooth)-echo bluetooth data
+	//
+	//Serial(Tx / Rx) communicate to PC via USB
+	//Serial3(Tx3 / Rx3) connect to HC - 06
+	//HC - 06 Rx - Due Tx3
+	//HC - 06 Tx - Due Rx3
+	//HC - 06 GND - Due GND
+	//HC - 06 VCC - Due 3.3V
+
+	#define btSerial Serial3
+	#define BAUDRATE 400000
+#endif // AVR
+
+#include <BinaryMsgMessages.h>
 
 // Outgoing msg IDs
 #define OUT_MSG_ID_ANALOG_0 20
@@ -62,10 +90,6 @@ uint8_t buff[IN_BUFF_SIZE];
 uint8_t currentPos = 0;
 uint8_t currentRemaining = 0;
 
-// The jumpers on Bluetooth board are set to 4TX and 5RX. 
-// They are reversed on serial since RX from BT gets TX to serial
-SoftwareSerial btSerial(5, 4); //RX,TX
-
 #endif // !SECTION_VARIABLES
 
 #ifndef SECTION_ARDUINO_FUNCTIONS
@@ -76,16 +100,16 @@ void setup() {
 	while (!Serial) {}
 #endif // DEBUG
 
-	// Must set the Bluetooth baud via an AT command AT+UART=115200,1,0
-	// otherwise it is not fast enough. SoftwareSerial does corrupts 
-	// data at that speed but I can recover. Better to route Bluetooth 
-	// to use a hardware serial port but this does for demo
-	btSerial.begin(115200); // 
+	btSerial.begin(BAUDRATE); // 
 
+#ifdef __AVR__
+	// No wait for hardware
 	while (!btSerial) {}
-#ifdef DEBUG
+#endif // __AVR__
+
+//#ifdef DEBUG
 	Serial.println("BT Binary...");
-#endif // DEBUG
+//#endif // DEBUG
 
 	Initialize();
 }
@@ -121,7 +145,7 @@ void Initialize() {
 	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_LED_BLUE_PIN, typeBool);
 	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_LED_RED_PIN, typeBool);
 
-	// Expectin Uint 8 msg with values 0-255 for PWM on digital pin
+	// Expecting Uint 8 msg with values 0-255 for PWM on digital pin
 	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_PMW_PIN_X, typeUInt8);
 	BinaryMsgProcessor::RegisterInIds(IN_MSG_ID_PMW_PIN_Y, typeUInt8);
 
