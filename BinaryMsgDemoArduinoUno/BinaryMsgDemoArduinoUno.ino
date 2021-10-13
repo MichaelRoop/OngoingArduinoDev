@@ -17,11 +17,14 @@
 	// UNO and others use the software serial.
 	#include <SoftwareSerial.h>
 
-	// Must set the Bluetooth baud via an AT command AT+UART=115200,1,0
-	// otherwise it is not fast enough. SoftwareSerial does corrupts 
+	// Must set the Bluetooth baud via an AT command 
+	//    On HC-05 AT+UART=115200,1,0
+	//    On HC-06 AT+BAUD8
+	// Otherwise it is not fast enough. SoftwareSerial does corrupts 
 	// data at that speed but I can recover. Better to route Bluetooth 
 	// to use a hardware serial port but this does for demo
-	#define BAUDRATE 115200
+	#define BT_BAUDRATE 115200
+	#define DBG_BAUD 115200
 
 	// The jumpers on Bluetooth board are set to 4TX and 5RX. 
 	// They are reversed on serial since RX from BT gets TX to serial
@@ -40,9 +43,9 @@
 	//HC - 06 Tx - Due Rx3
 	//HC - 06 GND - Due GND
 	//HC - 06 VCC - Due 3.3V
-
 	#define btSerial Serial3
-	#define BAUDRATE 400000
+	#define BT_BAUDRATE 115200
+	#define DBG_BAUD 115200
 #endif // AVR
 
 #include <BinaryMsgMessages.h>
@@ -57,8 +60,9 @@
 #define IN_MSG_ID_PMW_PIN_Y 13
 
 // Arduino physical pins
-#define LED_RED_PIN 1
-#define LED_BLUE_PIN 2
+// Due reserves 01 for programing port?
+#define LED_RED_PIN 2
+#define LED_BLUE_PIN 3
 #define PMW_PIN_X 9
 #define PMW_PIN_Y 10
 
@@ -96,14 +100,13 @@ uint8_t currentRemaining = 0;
 
 void setup() {
 #ifdef BINARY_MSG_DEBUG
-	Serial.begin(115200);
+	Serial.begin(DBG_BAUD);
 	while (!Serial) {}
 #endif // BINARY_MSG_DEBUG
 
-	btSerial.begin(BAUDRATE); // 
-
+	btSerial.begin(BT_BAUDRATE); // 
 #ifdef __AVR__
-	// No wait for hardware
+	// No wait for hardware serial, only soft serial
 	while (!btSerial) {}
 #endif // __AVR__
 
@@ -154,7 +157,7 @@ void Initialize() {
 	BinaryMsgProcessor::RegisterInMsgHandler_Bool(&InMsgHandler_Bool);
 	BinaryMsgProcessor::RegisterInMsgHandler_UInt8(&InMsgHandler_Uint8);
 #ifdef BINARY_MSG_DEBUG
-	BinaryMsgProcessor::RegisterErrCallback(&ErrCallback);
+	BinaryMsgProcessor::RegisterErrHandler(&DebugErrHanlder);
 #endif // BINARY_MSG_DEBUG
 }
 
@@ -206,6 +209,11 @@ void GetNewMsg(int available) {
 	if (available >= MSG_HEADER_SIZE) {
 		//Serial.print("GetNewMsg:"); Serial.println(available);
 		currentPos = btSerial.readBytes(buff, MSG_HEADER_SIZE);
+
+#ifdef BINARY_MSG_DEBUG
+		//DumpBuffer(buff, currentPos);
+#endif // BINARY_MSG_DEBUG
+
 		if (BinaryMsgProcessor::ValidateHeader(buff, currentPos)) {
 			currentRemaining = (BinaryMsgProcessor::GetSizeFromHeader(buff) - MSG_HEADER_SIZE);
 			available = btSerial.available();
@@ -216,16 +224,9 @@ void GetNewMsg(int available) {
 		else {
 #ifdef BINARY_MSG_DEBUG
 			Serial.print("GetNewMsgERR- currentPos:"); Serial.println(currentPos);
-			Serial.print("---:");
-			Serial.print(buff[0]); Serial.print(",");
-			Serial.print(buff[1]); Serial.print(",");
-			Serial.print(buff[2]); Serial.print(",");
-			Serial.print(buff[3]); Serial.print(",");
-			Serial.print(buff[4]); Serial.print(",");
-			Serial.print(buff[5]); Serial.print(",");
-			Serial.print(buff[6]); Serial.print(",");
-			Serial.println(buff[8]);
+			//DumpBuffer(buff, currentPos);
 #endif // BINARY_MSG_DEBUG
+
 			PurgeBuffAndBT();
 		}
 	}
@@ -239,6 +240,10 @@ void GetRemainingMsgFragment(int available) {
 		//Serial.print("GetFrag:"); Serial.print(currentRemaining); Serial.print(":"); Serial.println(count);
 		currentPos += count;
 		bool result = BinaryMsgProcessor::ValidateMessage(buff, currentPos);
+#ifdef BINARY_MSG_DEBUG
+		Serial.print("GetRemainingInFrag: ");
+		//DumpBuffer(buff, currentPos);
+#endif // BINARY_MSG_DEBUG
 		ResetInBuff();
 	}
 }
@@ -294,9 +299,6 @@ void SendInt16Msg(uint8_t id, int16_t value) {
 void SendInt32Msg(uint8_t id, int32_t value) {
 }
 
-void SendUInt8Msg(uint8_t id, uint8_t value) {
-}
-
 void SendUInt16Msg(uint8_t id, uint16_t value) {
 }
 
@@ -308,6 +310,13 @@ void SendFloatMsg(uint8_t id, float value) {
 	outFloat.Id = id;
 	outFloat.Value = value;
 	//Serial.println(value);
+
+#ifdef BINARY_MSG_DEBUG
+	// DO A TEMP HERE. THE SIZE IS RECORDED AS 2 TOO BIG
+	//Serial.print("Out Float32 Msg: ");
+	DumpBuffer((uint8_t*)&outFloat, outFloat.Size);
+#endif // BINARY_MSG_DEBUG
+
 	SendMsg(&outFloat, outFloat.Size);
 }
 
@@ -316,7 +325,14 @@ void SendUint8Msg(uint8_t id, uint8_t value) {
 	outUint8.Id = id;
 	outUint8.Value = value;
 	//Serial.println(value);
+
+#ifdef BINARY_MSG_DEBUG
+	Serial.print("Out Uint8 Msg: ");
+	DumpBuffer((uint8_t*) &outUint8, outUint8.Size);
+#endif // BINARY_MSG_DEBUG
+
 	SendMsg(&outUint8, outUint8.Size);
+	delay(10);
 }
 
 
@@ -338,14 +354,17 @@ void SendTemperature(int sensorValue) {
 
 #ifndef SECTION_CALLBACKS
 
-void InMsgHandler_Bool(uint8_t id, bool value) {
-	//Serial.print("bool-id:"); Serial.print(id); Serial.print(" Val:"); Serial.println(value);
+void InMsgHandler_Bool(uint8_t id, bool val) {
+#ifdef BINARY_MSG_DEBUG
+	Serial.print("InMsgHandler_Bool(id "); Serial.print(id); Serial.print(", val "); Serial.print(val); Serial.println(")");
+#endif // BINARY_MSG_DEBUG
+
 	switch (id) {
 	case IN_MSG_ID_LED_RED_PIN:
-		digitalWrite(LED_RED_PIN, value ? HIGH : LOW);
+		digitalWrite(LED_RED_PIN, val ? HIGH : LOW);
 		break;
 	case IN_MSG_ID_LED_BLUE_PIN:
-		digitalWrite(LED_BLUE_PIN, value ? HIGH : LOW);
+		digitalWrite(LED_BLUE_PIN, val ? HIGH : LOW);
 		break;
 	default:
 		// TODO - error msg if desired
@@ -375,7 +394,7 @@ void InMsgHandler_Uint8(uint8_t id, uint8_t value) {
 
 
 #ifdef BINARY_MSG_DEBUG
-void ErrCallback(ErrMsg* errMsg) {
+void DebugErrHanlder(ErrMsg* errMsg) {
 	PrintErr(errMsg);
 	if (errMsg->Error != err_NoErr) {
 		Serial.print("-SOH:"); Serial.println(errMsg->SOH);
@@ -459,6 +478,19 @@ void PrintErr(ErrMsg* msg) {
 		break;
 	}
 }
+
+
+void DumpBuffer(uint8_t* theBuff, uint8_t size) {
+	Serial.print("DumpBuffer - size:"); Serial.println(size);
+	for (int i = 0; i < size; i++) {
+		if (i > 0) {
+			Serial.print(",");
+		}
+		Serial.print(theBuff[i]); 
+	}
+	Serial.println();
+}
+
 #endif
 
 #endif // !SECTION_CALLBACKS
