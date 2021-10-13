@@ -3,3 +3,6 @@
 /BinaryMsgProcessorConsoleTest/Debug/*
 /BinaryMsgDemoArduinoUno/__vm/.BinaryMsgDemoArduinoUno.vsarduino.h
 /BinaryMsgDemoArduinoUno/Release/*
+/HardwareUARTSetBlueTooth/Debug/*
+/HardwareUARTSetBlueTooth/Release/*
+/HardwareUARTSetBlueTooth/__vm/.HardwareUARTSetBlueTooth.vsarduino.h

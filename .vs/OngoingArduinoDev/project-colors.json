@@ -1,0 +1,56 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "655c57b8-9b44-4629-8c54-3d793bc3f3d7": {
+      "ProjectGuid": "655c57b8-9b44-4629-8c54-3d793bc3f3d7",
+      "DisplayName": "OngoingArduinoDev",
+      "ColorIndex": 0
+    },
+    "bdb90ffd-d9f2-4033-a192-81e29a596236": {
+      "ProjectGuid": "bdb90ffd-d9f2-4033-a192-81e29a596236",
+      "DisplayName": "BinaryMsgProcessor",
+      "ColorIndex": 1
+    },
+    "5a2f5b80-bfff-4778-8549-00fcd9ee9409": {
+      "ProjectGuid": "5a2f5b80-bfff-4778-8549-00fcd9ee9409",
+      "DisplayName": "BinaryMsgProcessorConsoleTest",
+      "ColorIndex": 2
+    },
+    "c5f80730-f44f-4478-bdae-6634efc2ca88": {
+      "ProjectGuid": "c5f80730-f44f-4478-bdae-6634efc2ca88",
+      "DisplayName": "BinaryMsgDemoArduinoUno",
+      "ColorIndex": 3
+    },
+    "1d8335a7-f148-4809-92c1-d5b35b15a057": {
+      "ProjectGuid": "1d8335a7-f148-4809-92c1-d5b35b15a057",
+      "DisplayName": "BinaryMsgProcessor",
+      "ColorIndex": 4
+    },
+    "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3": {
+      "ProjectGuid": "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3",
+      "DisplayName": "Miscellaneous Files",
+      "ColorIndex": -1
+    },
+    "794d55bd-4bd4-4a69-ab9d-4a3efc188fd0": {
+      "ProjectGuid": "794d55bd-4bd4-4a69-ab9d-4a3efc188fd0",
+      "DisplayName": "BinaryMsgProcessor-1.0.0",
+      "ColorIndex": 5
+    },
+    "74d0668a-59b6-4ce1-b0c8-e181a9968487": {
+      "ProjectGuid": "74d0668a-59b6-4ce1-b0c8-e181a9968487",
+      "DisplayName": "BinaryMsgDemoDue",
+      "ColorIndex": 6
+    },
+    "b62d3efa-cf38-49e7-b955-8b26f141ed66": {
+      "ProjectGuid": "b62d3efa-cf38-49e7-b955-8b26f141ed66",
+      "DisplayName": "HardwareUARTSetBlueTooth",
+      "ColorIndex": 7
+    },
+    "b1dc5f0a-4630-4f76-8c0d-cf61668b6240": {
+      "ProjectGuid": "b1dc5f0a-4630-4f76-8c0d-cf61668b6240",
+      "DisplayName": "HardwareUARTSetBlueTooth",
+      "ColorIndex": 8
+    }
+  },
+  "NextColorIndex": 9
+}
