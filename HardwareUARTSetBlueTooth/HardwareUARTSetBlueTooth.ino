@@ -29,10 +29,8 @@ Chinese HC-06 blinks continuously when started. It is in AT mode. When connected
 
 // First connection
 #define HW_SERIAL_BAUD 115200
-//#define HW_SERIAL_BAUD 38400
-//#define HW_SERIAL_BAUD 9600
+#define HW_SERIAL_BAUD 460800
 
-//#define SW_SERIAL_BAUD 9600
 #define SW_SERIAL_BAUD 115200
 
 

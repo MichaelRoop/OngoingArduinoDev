@@ -44,7 +44,7 @@
 	//HC - 06 GND - Due GND
 	//HC - 06 VCC - Due 3.3V
 	#define btSerial Serial3
-	#define BT_BAUDRATE 115200
+	#define BT_BAUDRATE 460800
 	#define DBG_BAUD 115200
 #endif // AVR
 
@@ -66,8 +66,8 @@
 #define PMW_PIN_X 9
 #define PMW_PIN_Y 10
 
-// Analog debounce limit
-#define ANALOG_DEBOUNCE_GAP 5
+// Analog debounce limit - likely need a factor msg per sec
+#define ANALOG_DEBOUNCE_GAP 10
 
 // We never copy in more than the max current message size of 12
 #define IN_BUFF_SIZE 12
