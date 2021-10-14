@@ -64,13 +64,6 @@ For HC-06 key pin boards.
 #endif // USING_HW_SERIAL
 
 
-// First connection
-
-
-#define BUFF_SIZE 50
-
-char buff[BUFF_SIZE];
-
 // the setup function runs once when you press reset or power the board
 void setup() {
 
