@@ -15,8 +15,7 @@
 //		같|같�
 //		같같같  RX
 //
-// MUST HAVE DEBUG SERIAL SET TO 9600 Baud
-// MUST HAVE BT SERIAL SET TO 38400 Baud
+// The #ifdef SECTION_... are used to hide code with Visual Micro under Visual studio
 
 #include <SoftwareSerial.h>
 
@@ -27,9 +26,7 @@ SoftwareSerial btSerial(5, 4); //RX,TX
 #ifndef SECTION_DATA
 
 #define IN_BUFF_SIZE 50
-#define MSG_COMP_BUFF 50
 char inBuff[IN_BUFF_SIZE];
-char msgCmpBuff[IN_BUFF_SIZE];
 int msgSize = 0;
 unsigned char inIndex = 0;
 
@@ -42,9 +39,11 @@ char CLOSE_DOOR_CMD[] = "CloseDoor";
 int  OPEN_CMD_LEN = 8;
 int CLOSE_CMD_LEN = 9;
 
+// 115200 is fast for BT module with SoftwareSerial. May get data corruption
 #define BT_BAUD 115200
 #define DBG_BAUD 115200
 
+// Uncomment to enable debug feedback through serial
 //#define DBG_ON 1
 
 #endif // !SECTION_DATA
@@ -52,6 +51,7 @@ int CLOSE_CMD_LEN = 9;
 #ifndef SECTION_ARDUINO_FUNCS
 
 void setup() {
+	pinMode(LED_BUILTIN, OUTPUT);
 	SetupCommunications(DBG_BAUD, BT_BAUD);
 }
 
@@ -62,7 +62,6 @@ void loop() {
 }
 
 #endif // !SECTION_ARDUINO_FUNCS
-
 
 #ifndef SECTION_HELPERS
 
@@ -117,12 +116,13 @@ void ListenForData() {
 			if (i > 1) {
 				if (inBuff[i - 1] == '\n' && inBuff[i] == '\r') {
 					msgSize = i - 1;
-					memset(msgCmpBuff, 0, MSG_COMP_BUFF);
-					memcpy(msgCmpBuff, inBuff, msgSize);
-					memmove(inBuff, &inBuff[i + 1], (inIndex + count) - (msgSize + 2));
-					inIndex -= msgSize + 2;
-					memset(&inBuff[inIndex], 0, (IN_BUFF_SIZE - inIndex));
 					CompareForResponse(msgSize);
+
+					// Now move everything over and memset end
+					memmove(inBuff, &inBuff[i + 1], (inIndex + count) - (msgSize + 2));
+					memset(&inBuff[inIndex], 0, (IN_BUFF_SIZE - inIndex));
+					inIndex = 0;
+					break;
 				}
 			}
 		}
@@ -140,19 +140,19 @@ void CompareForResponse(int msgSize) {
 #ifdef DBG_ON
 	Serial.println();
 	Serial.print("Comparing msg in buffer (");
-	Serial.print(msgCmpBuff);
-	Serial.println(")");
+	Serial.write(inBuff, msgSize);
+	Serial.print(") - Size:"); Serial.println(msgSize);
 #endif // DBG_ON
 
 	// Compare from start of buffer. Garbage at end of Command
 	// and before terminator is ignored (OpenDoorlsdlfkdjdflj)
-	if (strncmp(msgCmpBuff, OPEN_DOOR_CMD, OPEN_CMD_LEN) == 0) {
+	if (strncmp(inBuff, OPEN_DOOR_CMD, OPEN_CMD_LEN) == 0) {
 		Blink();
 		btSerial.write("OPENING\n\r");
 		btSerial.flush();
 		OpenGarageDoor();
 	}
-	else if (strncmp(msgCmpBuff, CLOSE_DOOR_CMD, CLOSE_CMD_LEN) == 0) {
+	else if (strncmp(inBuff, CLOSE_DOOR_CMD, CLOSE_CMD_LEN) == 0) {
 		Blink();
 		btSerial.write("CLOSING\n\r");
 		btSerial.flush();
@@ -173,7 +173,6 @@ void CompareForResponse(int msgSize) {
 
 void OpenGarageDoor() {
 #ifdef DBG_ON
-	Serial.println();
 	Serial.println("OPENING Garage Door");
 #endif // DBG_ON
 
@@ -183,7 +182,6 @@ void OpenGarageDoor() {
 
 void CloseGarageDoor() {
 #ifdef DBG_ON
-	Serial.println();
 	Serial.println("CLOSING Garage Door");
 #endif // DBG_ON
 
@@ -193,7 +191,7 @@ void CloseGarageDoor() {
 // So user can tell device is sending back stuff
 void Blink() {
 	digitalWrite(LED_BUILTIN, HIGH);
-	delay(1);
+	delay(50);
 	digitalWrite(LED_BUILTIN, LOW);
 }
 
@@ -201,10 +199,10 @@ void Blink() {
 void DBG_DumpChar(char c) {
 #ifdef DBG_ON
 	if (c == '\r') {
-		Serial.print("CR");
+		Serial.print("\\r");
 	}
 	else if (c == '\n') {
-		Serial.print("LN");
+		Serial.print("\\n");
 	}
 	else {
 		Serial.print(c);
