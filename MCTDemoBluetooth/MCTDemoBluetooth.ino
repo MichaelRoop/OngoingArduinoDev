@@ -45,7 +45,7 @@ int CLOSE_CMD_LEN = 9;
 #define BT_BAUD 115200
 #define DBG_BAUD 115200
 
-#define DBG_ON 1
+//#define DBG_ON 1
 
 #endif // !SECTION_DATA
 
@@ -107,7 +107,10 @@ void ListenForData() {
 		inIndex += count;
 		for (int i = 0; i < inIndex; i++) {
 			#ifdef DBG_ON
-			DBG_DumpChar(inBuff[i]);
+			// Echo portion just received
+			if (i >= (inIndex - count)) {
+				DBG_DumpChar(inBuff[i]);
+			}
 			#endif // DBG_ON
 
 			// Make assumption that \n\r comming in so look for \r for end
