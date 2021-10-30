@@ -50,7 +50,12 @@
       "ProjectGuid": "b1dc5f0a-4630-4f76-8c0d-cf61668b6240",
       "DisplayName": "HardwareUARTSetBlueTooth",
       "ColorIndex": 8
+    },
+    "be31c2ab-dadf-47a4-a539-131259d751f7": {
+      "ProjectGuid": "be31c2ab-dadf-47a4-a539-131259d751f7",
+      "DisplayName": "MCTDemoBluetooth",
+      "ColorIndex": 9
     }
   },
-  "NextColorIndex": 9
+  "NextColorIndex": 10
 }

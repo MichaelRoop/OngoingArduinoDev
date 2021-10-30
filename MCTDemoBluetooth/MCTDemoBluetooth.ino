@@ -17,12 +17,6 @@
 //
 // The #ifdef SECTION_... are used to hide code with Visual Micro under Visual studio
 
-#include <SoftwareSerial.h>
-
-// The jumpers on BT board are set to 4TX and 5RX. 
-// They are reversed on serial since RX from BT gets TX to serial
-SoftwareSerial btSerial(5, 4); //RX,TX
-
 #ifndef SECTION_DATA
 
 #define IN_BUFF_SIZE 50
@@ -39,8 +33,33 @@ char CLOSE_DOOR_CMD[] = "CloseDoor";
 int  OPEN_CMD_LEN = 8;
 int CLOSE_CMD_LEN = 9;
 
-// 115200 is fast for BT module with SoftwareSerial. May get data corruption
-#define BT_BAUD 115200
+#ifdef __AVR__
+	// For UNO
+	#include <SoftwareSerial.h>
+	SoftwareSerial _btSerial(5, 4); //RX,TX
+	#define btSerial _btSerial 
+
+	// 115200 is fast for BT module with SoftwareSerial. May get data corruption
+	#define BT_BAUD 115200
+#else
+	// For DUE with hardware port
+
+	// For non AVR like DUE defaulting to hardware serial port 3
+	// Matches configuration
+	//http://arduino-er.blogspot.com/2015/07/connect-arduino-due-with-hc-06.html
+	//
+	//Arduino Due + HC - 06 (Bluetooth)-echo bluetooth data
+	//
+	//Serial(Tx / Rx) communicate to PC via USB
+	//Serial3(Tx3 / Rx3) connect to HC - 06
+	//HC - 06 Rx - Due Tx3
+	//HC - 06 Tx - Due Rx3
+	//HC - 06 GND - Due GND
+	//HC - 06 VCC - Due 3.3V
+	#define btSerial Serial3
+	#define BT_BAUD 460800
+#endif // __AVR__
+
 #define DBG_BAUD 115200
 
 // Uncomment to enable debug feedback through serial
@@ -73,7 +92,9 @@ void SetupCommunications(long dbgBaud, long btBaud) {
 #endif // DBG_ON
 
 	btSerial.begin(btBaud);
+#ifdef __avr__
 	while (!btSerial) {}
+#endif // __avr__
 
 	#ifdef DBG_ON
 	Serial.println("Bluetooth DATA Mode up and running");
@@ -116,7 +137,10 @@ void ListenForData() {
 			if (i > 1) {
 				if (inBuff[i - 1] == '\n' && inBuff[i] == '\r') {
 					msgSize = i - 1;
-					CompareForResponse(msgSize);
+					#ifdef DBG_ON
+						DBG_DumpMsgFragment(msgSize);
+					#endif // DBG_ON
+					CompareForResponse();
 
 					// Now move everything over and memset end
 					memmove(inBuff, &inBuff[i + 1], (inIndex + count) - (msgSize + 2));
@@ -135,56 +159,40 @@ void ListenForData() {
 
 /// <summary>Compare the incoming message to carry out IO actions</summary>
 /// <param name="msgSize">Size of the incoming message</param>
-void CompareForResponse(int msgSize) {
-
-#ifdef DBG_ON
-	Serial.println();
-	Serial.print("Comparing msg in buffer (");
-	Serial.write(inBuff, msgSize);
-	Serial.print(") - Size:"); Serial.println(msgSize);
-#endif // DBG_ON
-
+void CompareForResponse() {
 	// Compare from start of buffer. Garbage at end of Command
 	// and before terminator is ignored (OpenDoorlsdlfkdjdflj)
 	if (strncmp(inBuff, OPEN_DOOR_CMD, OPEN_CMD_LEN) == 0) {
-		Blink();
-		btSerial.write("OPENING\n\r");
-		btSerial.flush();
+		SendResponse("OPENING\n\r");
 		OpenGarageDoor();
 	}
 	else if (strncmp(inBuff, CLOSE_DOOR_CMD, CLOSE_CMD_LEN) == 0) {
-		Blink();
-		btSerial.write("CLOSING\n\r");
-		btSerial.flush();
+		SendResponse("CLOSING\n\r");
 		CloseGarageDoor();
 	}
 	else {
-		Blink();
-		btSerial.write("NOT_HANDLED\n\r");
-		btSerial.flush();
-
-#ifdef DBG_ON
-		Serial.println();
-		Serial.println("NOT_HANDLED");
-#endif // DBG_ON
+		SendResponse("NOT_HANDLED\n\r");
 	}
 }
 
 
-void OpenGarageDoor() {
+void SendResponse(const char* response) {
+	Blink();
+	btSerial.write(response);
+	btSerial.flush();
 #ifdef DBG_ON
-	Serial.println("OPENING Garage Door");
+	Serial.print("Response:"); Serial.println(response);
 #endif // DBG_ON
 
+}
+
+
+void OpenGarageDoor() {
 	// Do you IO stuff here to open the door
 }
 
 
 void CloseGarageDoor() {
-#ifdef DBG_ON
-	Serial.println("CLOSING Garage Door");
-#endif // DBG_ON
-
 	// Do you IO stuff here to close the door
 }
 
@@ -210,6 +218,15 @@ void DBG_DumpChar(char c) {
 #endif // DBG_ON
 }
 
+
+void DBG_DumpMsgFragment(int msgSize) {
+#ifdef DBG_ON
+	Serial.println();
+	Serial.print("Comparing msg in buffer (");
+	Serial.write(inBuff, msgSize);
+	Serial.print(") - Size:"); Serial.println(msgSize);
+#endif // DBG_ON
+}
 
 #endif // !SECTION_HELPERS
 
