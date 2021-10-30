@@ -29,7 +29,7 @@ For oddball ZS non key pin HC-06 board
 boards
 
 For HC-06 key pin boards. 
-    Just pull the Key pin HIGH before powering the HC-06 board
+    Just pull the Key pin HIGH before powering the HC-06 board. 9600 BAUD for commands
 
 */
 
@@ -37,21 +37,9 @@ For HC-06 key pin boards.
 #ifdef HC06_WITH_KEY_PIN
 	// Using Digital Pin 9 here. Change as wanted
 	#define KEY_PIN_PULLUP 9
-
 #endif // HC06_WITH_KEY_PIN
 
-#define USING_HW_SERIAL
-#ifdef USING_HW_SERIAL
-	// For boards like DUE with hardware serial. Using 3 here. Change as wanted
-	#define BLUETOOTH_SERIAL_PORT Serial3
-	// For non key pin board like ZS-040 from www.hc02.com this will be the last
-	// baud set THAT YOU MUST REMEMBER. 
-	#define BT_HC06_SERIAL_BAUD 460800
-	// For feeding commands to the board. Set as desired
-	// NOTE: For the ZS HC-06 you must NOT add any delimiters (CR/LF) at end of AT commands
-	// on the serial output. It assumes a wait of 30ms means full command sent
-	#define	SW_SERIAL_BAUD 115200
-#else
+#ifdef __AVR__
 	#include <SoftwareSerial.h>
 	SoftwareSerial softSerial(5, 4); //RX,TX
 	#define BLUETOOTH_SERIAL_PORT softSerial
@@ -61,7 +49,17 @@ For HC-06 key pin boards.
 	// For HC-05 shield for UNO requires 38400 to BT in AT mode. Some boards have physical switch
 	#define BT_HC06_SERIAL_BAUD 38400
 	#define	SW_SERIAL_BAUD 38400
-#endif // USING_HW_SERIAL
+#else
+	// For boards like DUE with hardware serial. Using 3 here. Change as wanted
+	#define BLUETOOTH_SERIAL_PORT Serial3
+	// For non key pin board like ZS-040 from www.hc02.com this will be the last
+	// baud set THAT YOU MUST REMEMBER. 
+	#define BT_HC06_SERIAL_BAUD 460800
+	// For feeding commands to the board. Set as desired
+	// NOTE: For the ZS HC-06 you must NOT add any delimiters (CR/LF) at end of AT commands
+	// on the serial output. It assumes a wait of 30ms means full command sent
+	#define	SW_SERIAL_BAUD 115200
+#endif // __AVR__
 
 
 // the setup function runs once when you press reset or power the board
@@ -78,10 +76,10 @@ void setup() {
 #endif // HC06_WITH_KEY_PIN
 
 	BLUETOOTH_SERIAL_PORT.begin(BT_HC06_SERIAL_BAUD);
-#ifndef USING_HW_SERIAL
+#ifdef __AVR__
 	// Only have to wait on software serial port
 	while (!BLUETOOTH_SERIAL_PORT) {}
-#endif // !USING_HW_SERIAL
+#endif // !__AVR__
 
 	Serial.begin(SW_SERIAL_BAUD);
 	while (!Serial) {}
@@ -111,9 +109,5 @@ void loop() {
 			delay(3);
 		}
 	}
-
-
-
-
 
 }
